@@ -99,6 +99,8 @@ class roomInfo:
         self.plinths = []
         self.stairs = []
         self.spiralstairs = []
+        self.innerwalls = []
+        self.windows = []
 
 
 #
@@ -642,6 +644,18 @@ def printSpiralStairs (spiralstairs, o):
             o = p.write (o)
     return o
 
+def printInnerWalls (innerwalls, o):
+    if innerwalls != []:
+        for p in innerwalls:
+            o = p.write (o)
+    return o
+
+def printWindows (windows, o):
+    if windows != []:
+        for p in windows:
+            o = p.write (o)
+    return o
+
 
 def printAmmo (m, o):
     if m != []:
@@ -724,6 +738,8 @@ def printRoom (roomNo, outputFile):
     outputFile = printPlinths (rooms[roomNo].plinths, outputFile)
     outputFile = printStairs (rooms[roomNo].stairs, outputFile)
     outputFile = printSpiralStairs (rooms[roomNo].spiralstairs, outputFile)
+    outputFile = printInnerWalls (rooms[roomNo].innerwalls, outputFile)
+    outputFile = printWindows (rooms[roomNo].windows, outputFile)
     outputFile.write ("END\n\n")
     return outputFile
 
@@ -956,6 +972,24 @@ class spiralstairs:
         f.write ("   SPIRALSTAIRS %d %d %d\n" % (self.x, self.y, self.h))
         return f
 
+class innerwalls:
+    def __init__ (self, x, y, h):
+        self.x = x
+        self.y = y
+        self.h = h
+    def write (self, f):
+        f.write ("   INNERWALLS %d %d %d\n" % (self.x, self.y, self.h))
+        return f
+
+class windows:
+    def __init__ (self, x, y, h):
+        self.x = x
+        self.y = y
+        self.h = h
+    def write (self, f):
+        f.write ("   WINDOWS %d %d %d\n" % (self.x, self.y, self.h))
+        return f
+
 
 #
 #  ebnf := roomNo | worldSpawn | ammoSpawn | lightSpawn | configDefaults | monsterSpawn | weaponSpawn | soundSpawn | label | plinth =:
@@ -981,7 +1015,7 @@ class spiralstairs:
 reservedKeywords = ['ammo', 'ceiling', 'colour', 'default',
                     'floor', 'height', 'label', 'light', 'looping',
                     'mid', 'monster',
-                    'plinth', 'stairs', 'spiralstairs',
+                    'plinth', 'stairs', 'spiralstairs', 'innerwalls', 'windows',
                     'worldspawn',
                     'room', 'sound',
                     'texture', 'type',
@@ -1199,6 +1233,10 @@ def ebnf (room, x, y):
             pass
         elif parseSpiralStairs (room, x, y):
             pass
+        elif parseInnerWalls (room, x, y):
+            pass
+        elif parseWindows (room, x, y):
+            pass
         else:
             w = tokens.split ()[0]
             error ("unexpected token " + w + " in room " +
@@ -1366,6 +1404,12 @@ def parseTextureDefault (room, x, y):
     elif expecting (['spiralstairs']):
         expect ('spiralstairs', room, x, y)
         rooms[room].defaultTexture['SPIRALSTAIRS'] = expectString (room, x, y, 'a texture after the spiralstairs keyword')
+    elif expecting (['innerwalls']):
+        expect ('innerwalls', room, x, y)
+        rooms[room].defaultTexture['INNERWALLS'] = expectString (room, x, y, 'a texture after the innerwalls keyword')
+    elif expecting (['windows']):
+        expect ('windows', room, x, y)
+        rooms[room].defaultTexture['WINDOWS'] = expectString (room, x, y, 'a texture after the windows keyword')
     else:
         error ("expecting floor, ceiling, wall or plinth or stairs after the texture keyword\n")
 
@@ -1416,7 +1460,25 @@ def parseSpiralStairs (room, x, y):
         return True
     return False
 
+def parseInnerWalls (room, x, y):
+    if expecting (['innerwalls']):
+        expect ('innerwalls', room, x, y)
+        expect ('height', room, x, y)
+        h = expectInt (room, x, y, 'a height integer quantity after the height keyword')
+        p = innerwalls (x, y, h)
+        rooms[room].innerwalls += [p]
+        return True
+    return False
 
+def parseWindows (room, x, y):
+    if expecting (['windows']):
+        expect ('windows', room, x, y)
+        expect ('height', room, x, y)
+        h = expectInt (room, x, y, 'a height integer quantity after the height keyword')
+        p = windows (x, y, h)
+        rooms[room].windows += [p]
+        return True
+    return False
 #
 #  soundSpawn := 'sound' filename { "volume" int | "looping" | "wait" int } =:
 #

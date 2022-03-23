@@ -147,6 +147,8 @@ defaults = { "portal":"textures/editor/visportal",
              "plinth_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
              "stairs_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
              "spiralstairs_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
+             "innerwalls_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
+             "windows_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
              "ceiling_transform":"( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) )",
              "secret_transform" :"( ( 0.0156250019 0 1.0000002384 ) ( 0 0.015625 6.25 ) )",
              "brick_transform"  :"( ( 0.015625 0 0 ) ( 0 0.0078125 0 ) )" }
@@ -547,6 +549,8 @@ class roomInfo:
         self.plinths = []
         self.stairs = []
         self.spiralstairs = []
+        self.innerwalls = []
+        self.windows = []
     def addWall (self, line):
         global maxx, maxy
         line = toLine (line)
@@ -586,6 +590,10 @@ class roomInfo:
         self.stairs += [[int (x), int (y), int (h)]]
     def addSpiralStairs (self, x, y, h):
         self.spiralstairs += [[int (x), int (y), int (h)]]
+    def addInnerWalls (self, x, y, h):
+        self.innerwalls += [[int (x), int (y), int (h)]]
+    def addWindows (self, x, y, h):
+        self.windows += [[int (x), int (y), int (h)]]
 
 def newRoom (n):
     global rooms
@@ -1058,11 +1066,11 @@ def stairsDesc ():
                 h = curInteger
                 curRoom.addStairs (x, y, h)
             else:
-                errorLine ('expecting third integer, the height, for a plinth')
+                errorLine ('expecting third integer, the height, for a staircase')
         else:
-            errorLine ('expecting second integer, the Y axis, for a plinth')
+            errorLine ('expecting second integer, the Y axis, for a staircase')
     else:
-        errorLine ('expecting first integer, the X axis, for a plinth')
+        errorLine ('expecting first integer, the X axis, for a staircase')
 
 
 def spiralStairsDesc ():
@@ -1076,11 +1084,45 @@ def spiralStairsDesc ():
                 h = curInteger
                 curRoom.addSpiralStairs (x, y, h)
             else:
-                errorLine ('expecting third integer, the height, for a plinth')
+                errorLine ('expecting third integer, the height, for a spiral staircase')
         else:
-            errorLine ('expecting second integer, the Y axis, for a plinth')
+            errorLine ('expecting second integer, the Y axis, for a spiral staircase')
     else:
-        errorLine ('expecting first integer, the X axis, for a plinth')
+        errorLine ('expecting first integer, the X axis, for a spiral staircase')
+
+def innerWallsDesc ():
+    expect ('INNERWALLS')
+    global curRoom
+    if integer ():
+        x = curInteger
+        if integer ():
+            y = curInteger
+            if integer ():
+                h = curInteger
+                curRoom.addInnerWalls (x, y, h)
+            else:
+                errorLine ('expecting third integer, the height, for an inside wall')
+        else:
+            errorLine ('expecting second integer, the Y axis, for an inside wall')
+    else:
+        errorLine ('expecting first integer, the X axis, for an inside wall')
+
+def WindowsDesc ():
+    expect ('WINDOWS')
+    global curRoom
+    if integer ():
+        x = curInteger
+        if integer ():
+            y = curInteger
+            if integer ():
+                h = curInteger
+                curRoom.addWindows (x, y, h)
+            else:
+                errorLine ('expecting third integer, the height, for a window')
+        else:
+            errorLine ('expecting second integer, the Y axis, for a window')
+    else:
+        errorLine ('expecting first integer, the X axis, for a window')
 
 
 #
@@ -1407,6 +1449,12 @@ def defaultTextureConfig ():
     elif expecting (['SPIRALSTAIRS']):
         expect ('SPIRALSTAIRS')
         curRoom.defaultTextures['spiralstairs'] = get ()
+    elif expecting (['INNERWALLS']):
+        expect ('INNERWALLS')
+        curRoom.defaultTextures['innerwalls'] = get ()
+    elif expecting (['WINDOWS']):
+        expect ('WINDOWS')
+        curRoom.defaultTextures['windows'] = get ()
     else:
         errorLine ("expecting FLOOR, WALL, CEILING and PLINTH after DEFAULT TEXTURE")
 
@@ -1500,7 +1548,7 @@ def roomDesc ():
             curRoom = newRoom (curRoomNo)
             if debugging:
                 print("roomDesc", curRoomNo)
-            while expecting (['DOOR', 'WALL', 'TREASURE', 'AMMO', 'WEAPON', 'LIGHT', 'INSIDE', 'MONSTER', 'SPAWN', 'DEFAULT', 'SOUND', 'LABEL', 'PLINTH', 'STAIRS', 'SPIRALSTAIRS']):
+            while expecting (['DOOR', 'WALL', 'TREASURE', 'AMMO', 'WEAPON', 'LIGHT', 'INSIDE', 'MONSTER', 'SPAWN', 'DEFAULT', 'SOUND', 'LABEL', 'PLINTH', 'STAIRS', 'SPIRALSTAIRS', 'INNERWALLS', 'WINDOWS']):
                 if expecting (['DOOR']):
                     doorDesc ()
                 elif expecting (['WALL']):
@@ -1531,6 +1579,10 @@ def roomDesc ():
                     stairsDesc ()
                 elif expecting (['SPIRALSTAIRS']):
                     spiralStairsDesc ()
+                elif expecting (['INNERWALLS']):
+                    innerWallsDesc ()
+                elif expecting (['WINDOWS']):
+                    WindowsDesc ()
             expect ('END')
             return True
         else:
@@ -3571,6 +3623,8 @@ def generateEntities (o):
             generatePlinths (r)
             generateStairs(r, o)
             generateSpiralStairs(r, o)
+            generateInnerWalls(r)
+            generateWindows(r)
             #writeTempPrims()
     vprintf ("\n")
     vprintf ("brick optimisation...")
@@ -3912,11 +3966,26 @@ def generateLightBlocks (r, walls):
 
 def generatePlinths (r):
     for p in rooms[r].plinths:
-        print("drawingplinth")
+        pos = [ (p[0]+0.25),  (p[1]+0.25), getFloorLevel (r)]
+        size = [0.5, 0.5, float (p[2]) / inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r) #middlepiece
+        print(str(pos), str(size))
         pos = [int (p[0]), int (p[1]), getFloorLevel (r)]
-        size = [1, 1, float (p[2]) / inchesPerUnit]
-        print (pos, size)
-        newcuboid (pos, size, 'plinth', r)
+        size = [1, 1, 6/inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r) #big bottom piece
+        print(str(pos), str(size))
+        pos = [ (p[0]+0.125),  (p[1]+0.125), getFloorLevel (r)]
+        size = [0.75, 0.75, 12/inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r) #small bottompiece
+        print(str(pos), str(size))
+        pos = [int (p[0]), int (p[1]), float (p[2]) / inchesPerUnit]
+        size = [1, 1, 6/inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r) #large top piece
+        print(str(pos), str(size))
+        pos = [ (p[0]+0.125),  (p[1]+0.125), (float (p[2]-6) / inchesPerUnit)]
+        size = [0.75, 0.75, 12/inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r) #small top piece
+        print(str(pos), str(size))
 
 
 def WriteStep(posX, posY, tread, rise, floor, stepNo, o):
@@ -4001,6 +4070,20 @@ def generateSpiralStairs (r, o):
         for s in range(25):
             WriteSpiralStep(p[0]-1, p[1]-1, 11, 6, getFloorLevel(r)*inchesPerUnit+6*s, s, s*15, o)
 
+def generateInnerWalls (r):
+    for p in rooms[r].innerwalls:
+        pos = [int (p[0]+1), int (p[1]+1), getFloorLevel (r)]
+        size = [1, 1, float (p[2]) / inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r)
+
+def generateWindows (r):
+    for p in rooms[r].windows:
+        pos = [int (p[0]+1), int (p[1]+1), getFloorLevel (r)]
+        size = [1, 1, 48 / inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r)
+        pos = [int (p[0]+1), int (p[1]+1), 96/inchesPerUnit]
+        size = [1, 1,  float (p[2]-2) / inchesPerUnit]
+        newcuboid (pos, size, 'plinth', r)
 
 def generatePythonMonsters (o, e):
     n = 1
