@@ -149,6 +149,7 @@ defaults = { "portal":"textures/editor/visportal",
              "spiralstairs_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
              "innerwalls_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
              "windows_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
+             "innerceilings_transform" :"( ( 0.03 0 0 ) ( 0 0.03 0 ) )",
              "ceiling_transform":"( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) )",
              "secret_transform" :"( ( 0.0156250019 0 1.0000002384 ) ( 0 0.015625 6.25 ) )",
              "brick_transform"  :"( ( 0.015625 0 0 ) ( 0 0.0078125 0 ) )" }
@@ -551,6 +552,7 @@ class roomInfo:
         self.spiralstairs = []
         self.innerwalls = []
         self.windows = []
+        self.innerceilings = []
     def addWall (self, line):
         global maxx, maxy
         line = toLine (line)
@@ -594,6 +596,8 @@ class roomInfo:
         self.innerwalls += [[int (x), int (y), int (h)]]
     def addWindows (self, x, y, h):
         self.windows += [[int (x), int (y), int (h)]]
+    def addInnerCeilings (self, x, y, h):
+        self.innerceilings += [[int (x), int (y), int (h)]]
 
 def newRoom (n):
     global rooms
@@ -1124,6 +1128,23 @@ def WindowsDesc ():
     else:
         errorLine ('expecting first integer, the X axis, for a window')
 
+def innerCeilingsDesc ():
+    expect ('INNERCEILINGS')
+    global curRoom
+    if integer ():
+        x = curInteger
+        if integer ():
+            y = curInteger
+            if integer ():
+                h = curInteger
+                curRoom.addInnerCeilings (x, y, h)
+            else:
+                errorLine ('expecting third integer, the height, for a window')
+        else:
+            errorLine ('expecting second integer, the Y axis, for a window')
+    else:
+        errorLine ('expecting first integer, the X axis, for a window')
+
 
 #
 #  status := "STATUS" ( [ 'OPEN' | 'CLOSED' | 'SECRET' ] ) =:
@@ -1455,6 +1476,9 @@ def defaultTextureConfig ():
     elif expecting (['WINDOWS']):
         expect ('WINDOWS')
         curRoom.defaultTextures['windows'] = get ()
+    elif expecting (['INNERCEILINGS']):
+        expect ('INNERCEILINGS')
+        curRoom.defaultTextures['innerceilings'] = get ()
     else:
         errorLine ("expecting FLOOR, WALL, CEILING and PLINTH after DEFAULT TEXTURE")
 
@@ -1548,7 +1572,7 @@ def roomDesc ():
             curRoom = newRoom (curRoomNo)
             if debugging:
                 print("roomDesc", curRoomNo)
-            while expecting (['DOOR', 'WALL', 'TREASURE', 'AMMO', 'WEAPON', 'LIGHT', 'INSIDE', 'MONSTER', 'SPAWN', 'DEFAULT', 'SOUND', 'LABEL', 'PLINTH', 'STAIRS', 'SPIRALSTAIRS', 'INNERWALLS', 'WINDOWS']):
+            while expecting (['DOOR', 'WALL', 'TREASURE', 'AMMO', 'WEAPON', 'LIGHT', 'INSIDE', 'MONSTER', 'SPAWN', 'DEFAULT', 'SOUND', 'LABEL', 'PLINTH', 'STAIRS', 'SPIRALSTAIRS', 'INNERWALLS', 'WINDOWS', 'INNERCEILINGS']):
                 if expecting (['DOOR']):
                     doorDesc ()
                 elif expecting (['WALL']):
@@ -1583,6 +1607,8 @@ def roomDesc ():
                     innerWallsDesc ()
                 elif expecting (['WINDOWS']):
                     WindowsDesc ()
+                elif expecting (['INNERCEILINGS']):
+                    innerCeilingsDesc ()
             expect ('END')
             return True
         else:
@@ -3620,11 +3646,12 @@ def generateEntities (o):
             generateCeiling (r, e)
             generateFloor (r, e)
             generateLightBlocks (r, el)
-            generatePlinths (r)
+            generatePlinths (r, o)
             generateStairs(r, o)
             generateSpiralStairs(r, o)
-            generateInnerWalls(r)
-            generateWindows(r)
+            generateInnerWalls(r, o)
+            generateWindows(r, o)
+            generateInnerCeilings(r, o)
             #writeTempPrims()
     vprintf ("\n")
     vprintf ("brick optimisation...")
@@ -3964,28 +3991,73 @@ def generateLightBlocks (r, walls):
             error ("unrecognised light position " + l[1].getOn ())
 
 
-def generatePlinths (r):
+def generatePlinths (r, o):
     for p in rooms[r].plinths:
-        pos = [ (p[0]+0.25),  (p[1]+0.25), getFloorLevel (r)]
-        size = [0.5, 0.5, float (p[2]) / inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r) #middlepiece
-        print(str(pos), str(size))
-        pos = [int (p[0]), int (p[1]), getFloorLevel (r)]
-        size = [1, 1, 6/inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r) #big bottom piece
-        print(str(pos), str(size))
-        pos = [ (p[0]+0.125),  (p[1]+0.125), getFloorLevel (r)]
-        size = [0.75, 0.75, 12/inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r) #small bottompiece
-        print(str(pos), str(size))
-        pos = [int (p[0]), int (p[1]), float (p[2]) / inchesPerUnit]
-        size = [1, 1, 6/inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r) #large top piece
-        print(str(pos), str(size))
-        pos = [ (p[0]+0.125),  (p[1]+0.125), (float (p[2]-6) / inchesPerUnit)]
-        size = [0.75, 0.75, 12/inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r) #small top piece
-        print(str(pos), str(size))
+
+        floor = getFloorLevel(r)
+        o.write ('    // plinth middle \n')
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-2+0.25)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.25)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.75)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-2+0.75)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+        o.write ('    // plinth high top \n')
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-2+1)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (p[2])], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (p[2]+6)], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+
+        o.write ('    // plinth low top \n')
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-2+0.125)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.125)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.875)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-2+0.875)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (p[2]-6)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+
+        o.write ('    // plinth low bottom \n')
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-2+1)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (floor)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (floor+6)], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+
+        o.write ('    // plinth low top \n')
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-2+0.125)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.125)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.875)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-2+0.875)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (floor)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2+0.5)*inchesPerUnit, (p[1]-2+0.5)*inchesPerUnit, (floor+12)], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
 
 
 def WriteStep(posX, posY, tread, rise, floor, stepNo, o):
@@ -4070,20 +4142,67 @@ def generateSpiralStairs (r, o):
         for s in range(25):
             WriteSpiralStep(p[0]-1, p[1]-1, 11, 6, getFloorLevel(r)*inchesPerUnit+6*s, s, s*15, o)
 
-def generateInnerWalls (r):
+def generateInnerWalls (r, o):
     for p in rooms[r].innerwalls:
-        pos = [int (p[0]+1), int (p[1]+1), getFloorLevel (r)]
-        size = [1, 1, float (p[2]) / inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r)
+        floor = getFloorLevel(r)*inchesPerUnit
+        print(str(floor))
+        #pos = [int (p[0]+1), int (p[1]+1), getFloorLevel (r)]
+        #size = [1, 1, float (p[2]) / inchesPerUnit]
+        #newcuboid (pos, size, 'plinth', r)
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
 
-def generateWindows (r):
+def generateWindows (r, o):
     for p in rooms[r].windows:
-        pos = [int (p[0]+1), int (p[1]+1), getFloorLevel (r)]
-        size = [1, 1, 48 / inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r)
-        pos = [int (p[0]+1), int (p[1]+1), 96/inchesPerUnit]
-        size = [1, 1,  float (p[2]-2) / inchesPerUnit]
-        newcuboid (pos, size, 'plinth', r)
+        floor = getFloorLevel(r)*inchesPerUnit
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (floor+96)], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2]-48)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+
+def generateInnerCeilings (r, o):
+    for p in rooms[r].innerceilings:
+        floor = getFloorLevel(r)*inchesPerUnit
+
+        o.write ('    {\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2]-48)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
 
 def generatePythonMonsters (o, e):
     n = 1

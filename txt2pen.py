@@ -101,6 +101,7 @@ class roomInfo:
         self.spiralstairs = []
         self.innerwalls = []
         self.windows = []
+        self.innerceilings = []
 
 
 #
@@ -634,26 +635,32 @@ def printPlinths (plinths, o):
 
 def printStairs (stairs, o):
     if stairs != []:
-        for p in stairs:
-            o = p.write (o)
+        for s in stairs:
+            o = s.write (o)
     return o
 
 def printSpiralStairs (spiralstairs, o):
     if spiralstairs != []:
-        for p in spiralstairs:
-            o = p.write (o)
+        for s in spiralstairs:
+            o = s.write (o)
     return o
 
 def printInnerWalls (innerwalls, o):
     if innerwalls != []:
-        for p in innerwalls:
-            o = p.write (o)
+        for w in innerwalls:
+            o = w.write (o)
     return o
 
 def printWindows (windows, o):
     if windows != []:
-        for p in windows:
-            o = p.write (o)
+        for w in windows:
+            o = w.write (o)
+    return o
+
+def printInnerCeilings (innerceilings, o):
+    if innerceilings != []:
+        for c in innerceilings:
+            o = c.write (o)
     return o
 
 
@@ -740,6 +747,7 @@ def printRoom (roomNo, outputFile):
     outputFile = printSpiralStairs (rooms[roomNo].spiralstairs, outputFile)
     outputFile = printInnerWalls (rooms[roomNo].innerwalls, outputFile)
     outputFile = printWindows (rooms[roomNo].windows, outputFile)
+    outputFile = printInnerCeilings (rooms[roomNo].innerceilings, outputFile)
     outputFile.write ("END\n\n")
     return outputFile
 
@@ -990,6 +998,15 @@ class windows:
         f.write ("   WINDOWS %d %d %d\n" % (self.x, self.y, self.h))
         return f
 
+class innerceilings:
+    def __init__ (self, x, y, h):
+        self.x = x
+        self.y = y
+        self.h = h
+    def write (self, f):
+        f.write ("   INNERCEILINGS %d %d %d\n" % (self.x, self.y, self.h))
+        return f
+
 
 #
 #  ebnf := roomNo | worldSpawn | ammoSpawn | lightSpawn | configDefaults | monsterSpawn | weaponSpawn | soundSpawn | label | plinth =:
@@ -1015,7 +1032,7 @@ class windows:
 reservedKeywords = ['ammo', 'ceiling', 'colour', 'default',
                     'floor', 'height', 'label', 'light', 'looping',
                     'mid', 'monster',
-                    'plinth', 'stairs', 'spiralstairs', 'innerwalls', 'windows',
+                    'plinth', 'stairs', 'spiralstairs', 'innerwalls', 'windows', 'innerceilings',
                     'worldspawn',
                     'room', 'sound',
                     'texture', 'type',
@@ -1237,6 +1254,8 @@ def ebnf (room, x, y):
             pass
         elif parseWindows (room, x, y):
             pass
+        elif parseInnerCeilings (room, x, y):
+            pass
         else:
             w = tokens.split ()[0]
             error ("unexpected token " + w + " in room " +
@@ -1410,6 +1429,9 @@ def parseTextureDefault (room, x, y):
     elif expecting (['windows']):
         expect ('windows', room, x, y)
         rooms[room].defaultTexture['WINDOWS'] = expectString (room, x, y, 'a texture after the windows keyword')
+    elif expecting (['innerceilings']):
+        expect ('innerceilings', room, x, y)
+        rooms[room].defaultTexture['INNERCEILINGS'] = expectString (room, x, y, 'a texture after the innerceilings keyword')
     else:
         error ("expecting floor, ceiling, wall or plinth or stairs after the texture keyword\n")
 
@@ -1477,6 +1499,16 @@ def parseWindows (room, x, y):
         h = expectInt (room, x, y, 'a height integer quantity after the height keyword')
         p = windows (x, y, h)
         rooms[room].windows += [p]
+        return True
+    return False
+
+def parseInnerCeilings (room, x, y):
+    if expecting (['innerceilings']):
+        expect ('innerceilings', room, x, y)
+        expect ('height', room, x, y)
+        h = expectInt (room, x, y, 'a height integer quantity after the height keyword')
+        p = innerceilings (x, y, h)
+        rooms[room].innerceilings += [p]
         return True
     return False
 #
