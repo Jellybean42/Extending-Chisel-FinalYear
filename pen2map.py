@@ -3645,7 +3645,7 @@ def generateEntities (o):
                 generateBricks (r, e)
             generateCeiling (r, e)
             generateFloor (r, e)
-            generateLightBlocks (r, el)
+            generateLightBlocks (r, el, o)
             generatePlinths (r, o)
             generateStairs(r, o)
             generateSpiralStairs(r, o)
@@ -3889,22 +3889,67 @@ def newlight (pos, size, desc):
 
 pillarOffset = {'left':[0, 0], 'right':[1.0-lightBlock, 0], 'top':[0, 1.0-lightBlock], 'bottom':[0, 0]}
 
+def generateWallTorch(p, size, r, o, dir):
+    floor = getFloorLevel(r)
+    if dir[0]>0:
+        o.write ('    {//walltorch\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 0.96821 0 -0.25017 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 1 - '+ str(-distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]+size[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -0.96821 0 0.25017 '+ str(distance([(p[0]+size[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (floor + 1) * inchesPerUnit], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (floor+2)*inchesPerUnit], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+    if dir[1]>0 and dir[0]==0:
+        o.write ('    {//walltorch\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0.96821 -0.25017 '+ str(-distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -0.96821 0.25017 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]+size[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]+size[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (floor + 1) * inchesPerUnit], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (floor+2)*inchesPerUnit], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
+    if dir[1]==0 and dir[0]==0:
+        o.write ('    {//walltorch\n')
+        o.write ('         brushDef3\n')
+        o.write ('         {\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0.96821 0.25017 '+ str(-distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 -0.96821 -0.25017 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]+size[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0]+size[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (floor + 1) * inchesPerUnit], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (floor+2)*inchesPerUnit], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('         }\n')
+        o.write ('    }\n')
 
-def generateLightPillar (r, l, el):
+def generateLightPillar (r, l, el, o):
     light_stand_material = 'wall'
     lp = l[0]
     li = l[1]
+    
     for w in el:
         if nextTo (w, l[0]):
             if debugging:
                 print("light at", l, "is next to wall", w, "in room", r)
             # place pillar next to the wall using the offset above
             p0 = addVec ([float (lp[0]), float (lp[1])], pillarOffset[w[-1]])############
+            
             #p0 = [float (lp[0]), float (lp[1]), getFloorLevel (r)]
             size = [lightBlock, lightBlock, lightBlockHeight]
             #print "light is touching a wall", l
             pos = [p0[0], p0[1], getFloorLevel (r)]
-            newcuboid (pos, size, light_stand_material, r)
+            #newcuboid (pos, size, light_stand_material, r)
+            ###
+            generateWallTorch(pos, size, r, o, (pillarOffset[w[-1]]))
+            print(str(lp) + "  hhh  " + str(pillarOffset[w[-1]]))
+            ###
+
             # size = [lightBlock, lightBlock, lightHeight]
             pos = [float (p0[0]), float (p0[1]), lightHeight]
             size = [lightBlock, lightBlock, lightBlock]
@@ -3976,11 +4021,11 @@ def generateCeilingLight (r, l, walls):
     newlight (pos, size, li)
 
 
-def generateLightBlocks (r, walls):
+def generateLightBlocks (r, walls, o):
     for l in rooms[r].lights:
         if l[1].getOn () == "MID":
             if enablePillarLights:
-                generateLightPillar (r, l, walls)
+                generateLightPillar (r, l, walls, o)
         elif l[1].getOn () == "FLOOR":
             if enableFloorLights:
                 generateFloorLight (r, l, walls)
@@ -4183,7 +4228,7 @@ def generateWindows (r, o):
         o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
         o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
         o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
-        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2]-48)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2]-96)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
         o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbri7ck2" 0 0 0\n')
         o.write ('         }\n')
         o.write ('    }\n')
