@@ -3896,7 +3896,7 @@ def generateWallTorch(p, size, r, o, dir):
         o.write ('         brushDef3\n')
         o.write ('         {\n')
         o.write ('             ( 0.96821 0 -0.25017 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/wood1" 0 0 0\n')
-        o.write ('             ( 0 1 - '+ str(-distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/wood1" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(-distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/wood1" 0 0 0\n')
         o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]+size[1]-2)*inchesPerUnit, (p[2])], 0, 0.96821, 0.25017)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/wood1" 0 0 0\n')
         o.write ('             ( -0.96821 0 0.25017 '+ str(distance([(p[0]+size[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (p[2])], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/wood1" 0 0 0\n')
         o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-2)*inchesPerUnit, (p[1]-2)*inchesPerUnit, (floor + 1) * inchesPerUnit], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/wood1" 0 0 0\n')
