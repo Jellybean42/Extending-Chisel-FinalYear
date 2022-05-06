@@ -1,0 +1,121 @@
+
+define 1 room 1 [defroom] [bluefloor]
+define 2 room 2 [defroom] [redfloor]
+define 3 room 3 [defroom]  [greenfloor]
+define 4 room 4 [defroom] [purplefloor]
+define 5 room 5 [defroom] [blackfloor]
+define 6 room 6 [defroom] [slatefloor]
+define 7 room 7 [defroom]  [bluefloor]
+define 8 room 8 [defroom]   [redfloor]
+define 9 room 9 [defroom] [greenfloor]
+define a room 10 [defroom] [purplefloor]
+define b room 11 [defroom] [blackfloor]
+define c room 12 [defroom] [slatefloor]
+define d room 13 [defroom] [greenfloor]
+define e room 14 [defroom]  [bluefloor]
+define f room 15 [defroom] [redfloor]
+define g room 16 [defroom] [greenfloor]
+define h room 17 [defroom] [purplefloor]
+define i room 18 [defroom] [blackfloor]
+define j room 19 [defroom] [slatefloor]
+define k room 20 [defroom] [greenfloor]
+define l room 21 [defroom]  [bluefloor]
+define m room 22 [defroom] [redfloor]
+define n room 23 [defroom] [greenfloor]
+define o room 24 [defroom] [purplefloor]
+define p room 25 [defroom] [blackfloor]
+define q room 26 [defroom] [slatefloor]
+define r room 27 [defroom] [greenfloor]
+define s room 28 [defroom]  [bluefloor]
+define t room 29 [defroom] [redfloor]
+
+define S worldspawn
+define M monster python_doommarine_mp
+define N monster monster_demon_hellknight
+define O monster monster_demon_imp
+define X monster monster_demon_tick
+define Y monster monster_zombie_commando_cgun
+define Z monster monster_zombie_bernie
+
+define W weapon 9
+define E ammo item_medkit 1
+define H ammo ammo_shells_large 16
+
+define yellow colour 190 180 170
+define darkyellow colour 190 185 66
+define flame colour 170 107 7
+define lightflame colour 150 107 7
+
+define red colour 180 0 0
+define blue colour 0 0 180
+define green colour 0 180 0
+define darkblue colour 100 100 180
+
+define redfloor default texture floor textures/quake1/red_tile_floor
+define bluefloor default texture floor textures/quake1/blue_tile_floor
+define greenfloor default texture floor textures/quake1/green_tile_floor
+define purplefloor default texture floor textures/quake1/purple_tile_floor
+define blackfloor default texture floor textures/quake1/black_tile_floor
+define slatefloor default texture floor textures/quake1/slate_tile_floor
+define ceiling default texture ceiling textures/quake1/pine_wood
+
+define defroom default light mid [yellow] default light ceiling [flame] default light floor [flame]
+
+define P sound elysium.ogg volume -6 looping wait 0
+define Q sound abandon.ogg volume -6 looping wait 0
+define R sound visitingchambers.ogg volume -6 looping wait 0
+define W sound outsidehades.ogg volume -6 looping wait 0
+define T sound ontopoftheworld.ogg volume 1 looping wait 0
+define U sound visitingtheunderworld.ogg volume -6 looping wait 0
+
+
+##########################################
+#     Q #   .               .            #
+#  1 S  # 2 .   3           .  4       X #
+#       .   .               .            #
+#  W H  .   #####    ########            #
+#       .   #   ###..#      # X          #
+# E #####   # O        X  X #            #
+#   #   #   #               ###     W    ###
+#   #   #   ##                #            #
+# Y # O # X  #####          X #          O #######
+#   #   #        #            #            #     #
+#   # 5 #      O #  6         #            .   N #
+#   #   #    X   #            # X          . 7   #
+#   ###.####..#### X        X #            #     #
+#               #            #######..###..#######
+#      Z        # X          #X       #X   #
+#            E  #           Q. 8      . 9  #
+#               ##### X      .       R.    #
+#...#...#########   #      X #        #   ##
+#                 O # X  #######..#   #   #
+# X     X           ######   #    #   # X #
+#  a                .    .   # O  #   #   #
+#                   . b  . c #  d #   #..#####
+#                   .    .   # O  #   #      #
+#                   #    #   #    #   .    X #
+#      #...##...##########...##  O#   .U     #####
+#      #   .  X               ######.##          #
+#      # j .                  #   #g  #          #
+#      #   .  N               . f # X #  h     N #
+#      #####       i          .   #   #          #
+#      #   #X           ##...##########...#      #
+#      # X ####...#     #  X            X .      #
+#...####     #    #######                 .      #
+#   #    l O # X  #     #            T    #      #
+# k # X      #    #     #                 .    X #
+#   #   ###.## X  #     #   O O O O O O   .      #
+#   #####    .    #     #                 ########
+#   .     O  . m  # n   ###  o       ##..##
+#   .        .    #       #          #p  #
+#   # O      # X  #       #          # X #
+#   .   ##.###    #    N  #          #   #
+#   . O #    ##   #       # X        #####
+#   . q # r   # X #  N ####...########
+#   #   #   O #   #    #            #
+#   # O #     #   ##..## s          #
+#   #   #######        .            #
+# N # O .     .    X   .     N      #
+#   #   . t   .        .          X #
+#   #   .     .        #            #
+#####################################

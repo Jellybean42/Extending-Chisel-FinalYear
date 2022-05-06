@@ -1,0 +1,40 @@
+
+define 1 room 1
+define 2 room 2
+define 3 room 3
+define 4 room 4
+define 5 room 5
+define s worldspawn
+define o monster monster_demon_imp
+define c monster monster_demon_hellknight
+define h monster monster_demon_hellknight
+define S monster monster_demon_tick
+define i light
+define P monster python_demon_hellknight
+
+###########################################
+# 1              # 2          # 4         #
+#                #  o         #        c  #
+# s              .            #           #
+#                .            .           #
+#             P  #        o   .           #
+#                #          S #           #
+#                #            #           #
+##################..###########           #
+# 3                           .         o #
+#                             .           #
+#                             .           #
+#                             .           #
+#                             .           #
+#              h       h      .           #
+#                             .           #
+#                             .           #
+#                             .      o    #
+# S                           .           #
+#                             .           #
+###..##################################..##
+#5                                        #
+# o             h         h         h     #
+#                                         #
+#                                         #
+###########################################

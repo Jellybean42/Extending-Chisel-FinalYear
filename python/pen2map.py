@@ -4035,6 +4035,9 @@ def generateLightBlocks (r, walls, o):
         else:
             error ("unrecognised light position " + l[1].getOn ())
 
+#
+#   generatePlinths - creates 5 brushes from 30 planes to create a new plinth
+#
 
 def generatePlinths (r, o):
     for p in rooms[r].plinths:
@@ -4104,6 +4107,9 @@ def generatePlinths (r, o):
         o.write ('         }\n')
         o.write ('    }\n')
 
+#
+#   WriteStep - compiles 6 planes into a brush to create a single step
+#
 
 def WriteStep(posX, posY, tread, rise, floor, stepNo, o):
     o.write ('    // step \n')
@@ -4119,10 +4125,17 @@ def WriteStep(posX, posY, tread, rise, floor, stepNo, o):
     o.write ('         }\n')
     o.write ('    }\n')
 
+#
+#   generateStairs - generates a stair staircase, each loop creates a single step
+#
+
 def generateStairs (r, o):
+    tread = 11
+    rise = 6
+    numberofSteps = 25
     for p in rooms[r].stairs:
-        for s in range(25):
-            WriteStep(p[0]-1, p[1]-1, 11, 6, getFloorLevel(r)*inchesPerUnit, s, o)
+        for s in range(numberofSteps):
+            WriteStep(p[0]-1, p[1]-1, tread, rise, getFloorLevel(r)*inchesPerUnit, s, o)
 
 #def RotateNormalAboutZ(nX, nY, nZ, rotation, outputText):
 #    rotX = nX*math.cos(rotation) - nY*math.sin(rotation)
@@ -4132,6 +4145,10 @@ def generateStairs (r, o):
 #    else:
 #        print(str([rotX, rotY, nZ]))
 #        return [rotX, rotY, nZ]
+
+#
+#   WriteSpiralStepFace - This does the heavy lifting for creating the spiral staircase
+#
 
 def WriteSpiralStepFace(posX, posY, nX, nY, nZ, rotation, floorLevel, tread, width, rise, o):
     #Convert the positions to inches instead of units
@@ -4159,7 +4176,9 @@ def WriteSpiralStepFace(posX, posY, nX, nY, nZ, rotation, floorLevel, tread, wid
     o.write ('             ( '+str(NormalX)+' '+str(NormalY)+' '+str(NormalZ)+' '+str(FaceDistance)+' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
     o.write ('// '+str(posX)+'   '+str(posY)+'   '+str(Xoffset)+"  "+str(Yoffset))
 
-
+#
+#   WriteSpiralStep - Where the planes of the step are called and assembled into a brush
+#
 
 def WriteSpiralStep(posX, posY, tread, rise, floor, stepNo, rotation, o):
     o.write ('    // spiralstep \n')
@@ -4170,9 +4189,9 @@ def WriteSpiralStep(posX, posY, tread, rise, floor, stepNo, rotation, o):
     o.write ('    // side \n')
     WriteSpiralStepFace(posX, posY, 0, 1, 0, rotation, floor, 0, 128, 0, o) #wide end
     o.write ('    // wide end \n')
-    WriteSpiralStepFace(posX, posY, 0, -1, 0, rotation, floor, 0, -8, 0, o) #narrow end##
+    WriteSpiralStepFace(posX, posY, 0, -1, 0, rotation, floor, 0, -8, 0, o) #narrow end
     o.write ('    // narrow end \n')
-    WriteSpiralStepFace(posX, posY, -1, -0.07, 0, rotation, floor, -5.5, 0, 0, o) #side##
+    WriteSpiralStepFace(posX, posY, -1, -0.07, 0, rotation, floor, -5.5, 0, 0, o) #side
     o.write ('    // side \n')
     WriteSpiralStepFace(posX, posY, 0, 0, -1, rotation, floor, 0, 0, 0, o) #bottom
     o.write ('    // bottom \n')
@@ -4182,10 +4201,22 @@ def WriteSpiralStep(posX, posY, tread, rise, floor, stepNo, rotation, o):
     o.write ('    }\n')
     print("step no "+str(stepNo))
 
+
+#
+# generateSpiralStairs - the first of the 3 functions used to draw a spiral staircase
+#
+
 def generateSpiralStairs (r, o):
+    rise = 6
+    tread = 11
+    numberofSteps = 25
     for p in rooms[r].spiralstairs:
-        for s in range(25):
-            WriteSpiralStep(p[0]-1, p[1]-1, 11, 6, getFloorLevel(r)*inchesPerUnit+6*s, s, s*15, o)
+        for s in range(numberofSteps):
+            WriteSpiralStep(p[0]-1, p[1]-1, tread, rise, getFloorLevel(r)*inchesPerUnit+rise*s, s, s*15, o)
+
+#
+#generateInnerWalls - draws a single cuboid from 6 planes to act as a wall, identical to the old plinths
+#
 
 def generateInnerWalls (r, o):
     for p in rooms[r].innerwalls:
@@ -4197,14 +4228,18 @@ def generateInnerWalls (r, o):
         o.write ('    {\n')
         o.write ('         brushDef3\n')
         o.write ('         {\n')
-        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (floor+p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1])*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0])*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, (floor+p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
         o.write ('         }\n')
         o.write ('    }\n')
+
+#
+# generateWindows - draws 2 cuboids from planes with a gap between them, looks like a window between other windows or walls
+#
 
 def generateWindows (r, o):
     for p in rooms[r].windows:
@@ -4212,26 +4247,31 @@ def generateWindows (r, o):
         o.write ('    {\n')
         o.write ('         brushDef3\n')
         o.write ('         {\n')
-        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (floor+48)], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-1)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1])*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0])*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, (floor+48)], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
         o.write ('         }\n')
         o.write ('    }\n')
 
         o.write ('    {\n')
         o.write ('         brushDef3\n')
         o.write ('         {\n')
-        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (floor + p[2]-48)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (floor + p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 1 0 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-1)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1])*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( -1 0 0 '+ str(distance([(p[0])*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, (floor + p[2]-48)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
+        o.write ('             ( 0 0 1 '+ str(distance([(p[0]-0.5)*inchesPerUnit, (p[1]-0.5)*inchesPerUnit, (floor + p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
         o.write ('         }\n')
         o.write ('    }\n')
+
+#
+# generateInnerCeilings - uses cuboids to draw mid level objects the player can walk on or under
+#
+
 
 def generateInnerCeilings (r, o):
     cThickness = 12
@@ -4240,17 +4280,6 @@ def generateInnerCeilings (r, o):
         cPosition = [int(p[0]+1), int(p[1]+1), (floor + (p[2]-cThickness)/inchesPerUnit) ]
         size = [1, 1, cThickness/inchesPerUnit ]
         newcuboid(cPosition, size, 'plinth', r)
-        #o.write ('    {\n')
-        #o.write ('         brushDef3\n')
-        #o.write ('         {\n')
-        #o.write ('             ( 1 0 0 '+ str(distance([(p[0]-1+0)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], -1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        #o.write ('             ( 0 1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0)*inchesPerUnit, floor], 0, -1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        #o.write ('             ( 0 -1 0 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+1)*inchesPerUnit, floor], 0, 1, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        #o.write ('             ( -1 0 0 '+ str(distance([(p[0]-1+1)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, floor], 1, 0, 0)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        #o.write ('             ( 0 0 -1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (floor + p[2]-12)], 0, 0, -1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        #o.write ('             ( 0 0 1 '+ str(distance([(p[0]-1+0.5)*inchesPerUnit, (p[1]-1+0.5)*inchesPerUnit, (floor + p[2])], 0, 0, 1)) +' ) ( ( 0.0078125 0 0 ) ( 0 0.0078125 0 ) ) "textures/hell/cbrick2" 0 0 0\n')
-        #o.write ('         }\n')
-        #o.write ('    }\n')
 
 def generatePythonMonsters (o, e):
     n = 1
